@@ -17,7 +17,7 @@ This plugin uses the String type instead of the Image type. To use it you should
 ## Install
 
 ```sh
-npm i @capsia/gridsome-plugin-remote-image
+npm i @capsia/gridsome-plugin-local-image
 ```
 
 ## Setup
@@ -30,7 +30,7 @@ module.exports = {
   plugins: [
     //...
     {
-      use: '@capsia/gridsome-plugin-remote-image',
+      use: '@capsia/gridsome-plugin-local-image',
       options: {
         'typeName' : 'Entry',
         'sourceField': 'object.img',
@@ -38,7 +38,7 @@ module.exports = {
       }
     },
     {
-      use: '@capsia/gridsome-plugin-remote-image',
+      use: '@capsia/gridsome-plugin-local-image',
       options: {
         'typeName' : 'Entry',
         'sourceField': 'remoteImages',

@@ -1,6 +1,6 @@
 {
   "name": "@capsia/gridsome-plugin-local-image",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple gridsome plugin to download a remote image based on a defined graphql field",
   "main": "gridsome.server.js",
   "scripts": {
@@ -10,15 +10,12 @@
   "homepage": "https://github.com/capsia37/gridome-plugin-remote-image",
   "repository": {
     "type": "git",
-    "url": "https://github.com/capsia37/gridome-plugin-remote-image.git"
+    "url": "git+https://github.com/capsia37/gridome-plugin-remote-image.git"
   },
   "bugs": {
     "url": "https://github.com/capsia37/gridome-plugin-remote-image/issues"
   },
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "keywords": [
     "vue",
     "download",
@@ -34,5 +31,6 @@
     "mime": "^2.5.2",
     "normalize-url": "^5.3.0",
     "validate.js": "^0.13.1"
-  }
+  },
+  "devDependencies": {}
 }
