@@ -32,53 +32,15 @@ class ImageDownloader {
         this.options = options
         this.api = api
 
-        //initialize the `loadImage` event and make
-        //it available before we run the `onBootstrap` command
-        this.initializeEvent(api)
-
         //create a new type `Images` which is required
         //for array support
         //also add a new field to the defined collection
         //to store the downloaded images
-        api.createSchema(({ addSchemaTypes }) => {
+        api.createSchema(async ({}) => {
             const fieldType = this.getFieldType(api, options)
-            this.generateSchemaType(addSchemaTypes, fieldType)
+            await this.updateNodes(api, fieldType, this)
         });
 
-        //run the plugin code, after gridsome finished all their work
-        api.onBootstrap(() => this.loadImages())
-    }
-
-    /**
-     * Create a new event via the gridsome plugin api
-     * reference: node_modules/gridsome/lib/app/PluginAPI.js
-     */
-    initializeEvent(api) {
-        api._on('loadImage', this.runDownloader)
-    }
-
-    /**
-     * Run the defined event with the required
-     * arguments - i have no clue why `this` is not available
-     * but I'm too tired to check this in detail...
-     * Defining the needed methods is fine for me :)
-     */
-    async loadImages() {
-        await this.run('loadImage', null, {
-            getFieldType: this.getFieldType,
-            getRemoteImage: this.getRemoteImage,
-            updateNodes: this.updateNodes,
-            options: this.options
-        })
-    }
-
-    /**
-     * Defined in `initializeEvent`
-     * Called via `loadImages`
-     */
-    async runDownloader(plugin, api) {
-        const fieldType = plugin.getFieldType(api, plugin.options)
-        await plugin.updateNodes(api, fieldType, plugin)
     }
 
     getFieldType(api, options) {
@@ -109,50 +71,47 @@ class ImageDownloader {
         );
     }
 
-    generateSchemaType(addSchemaTypes, fieldType) {
-
-        const schemaType =
-        fieldType === 'string' ||
-        !!(this.options.schemaType && this.options.schemaType === 'Image')
-            ? 'Image'
-            : '[Images]'
-
-        addSchemaTypes(`
-            type Images {
-                image: Image
-            }
-        `)
-
-        //extend the existing schema
-        addSchemaTypes(`
-            type ${this.options.typeName} implements Node @infer {
-                ${this.options.targetField}: ${schemaType}
-            }
-        `)
-    }
-
     async updateNodes(api, fieldType, plugin) {
         const collection = api._app.store.getCollection(plugin.options.typeName)
 
+        async function recursiveSearch(currentPath, parentPath, pathToNode, pathIndex = 0) {
 
-        await collection.data().reduce(async (prev, node) => {
-            await prev
-            if (get(node,plugin.options.sourceField)) {
-                const imagePaths = await plugin.getRemoteImage(node, fieldType, plugin.options)
+            if (currentPath === undefined)
+                return
+
+            if (pathToNode.length === pathIndex) {
+                let imagePaths = await plugin.getRemoteImage(
+                    fieldType === 'string' ? [currentPath] : currentPath,
+                    plugin.options
+                )
 
                 if( fieldType === 'string' ) {
-                    node[plugin.options.targetField] = imagePaths[0]
+                    parentPath[pathToNode[pathToNode.length - 1]] = imagePaths[0]
                 } else {
-                    node[plugin.options.targetField] = imagePaths.map(image => ({ image }))
+                    parentPath[pathToNode[pathToNode.length - 1]] = imagePaths
                 }
 
-                collection.updateNode(node)
+                return
             }
-            return Promise.resolve()
-        }, Promise.resolve())
+
+            if (currentPath instanceof Array) {
+                for (let el of currentPath) {
+                  await recursiveSearch(el, currentPath, pathToNode, pathIndex)
+                }
+                return
+            }
+
+            return recursiveSearch(currentPath[pathToNode[pathIndex]], currentPath, pathToNode, pathIndex + 1)
+        }
+
+        await recursiveSearch (
+            collection.data(),
+            null,
+            plugin.options.sourceField.split(".")
+        );
     }
 
-    async getRemoteImage ( node, fieldType, options ) {
+    async getRemoteImage ( imageSources, options ) {
         // Set some defaults
         const { 
             cache = true, 
@@ -164,8 +123,6 @@ class ImageDownloader {
             targetPath = 'src/assets/remoteImages', 
             sourceField 
         } = options
-
-        const imageSources = (fieldType === 'string') ? [get(node, sourceField)] : get(node, sourceField)
 
         return Promise.all(
             imageSources.map( async imageSource => {
@@ -196,16 +153,25 @@ class ImageDownloader {
                         const { headers } = await got.head(imageSource)
                         ext = `.${mime.getExtension(headers['content-type'])}`
                     }
+                } catch (e) {
+                    console.log('')
+                    console.log(`${chalk.yellowBright(`Unable to get image type for ${options.typeName} - Source URL: ${imageSource}`)}`)
+                    console.log(`${chalk.redBright(e)}`)
+                    return null
+                }
 
-                    // Build the target file name - if we want the original name then return that, otherwise return a hash of the image source
-                    const targetFileName = original ? name : crypto.createHash('sha256').update(imageSource).digest('hex')
-                    // Build the target folder path - joining the current dir, target dir, and optional original path
-                    const targetFolder = path.join(process.cwd(), targetPath, original ? dir : '')
-                    // Build the file path including ext & dir
-                    const filePath = path.format({ ext, name: targetFileName, dir: targetFolder })
+                // Build the target file name - if we want the original name then return that, otherwise return a hash of the image source
+                const targetFileName = original ? name : crypto.createHash('sha256').update(imageSource).digest('hex')
+                // Build the target folder path - joining the current dir, target dir, and optional original path
+                const targetFolder = path.join(process.cwd(), targetPath, original ? dir : '')
+                // Build the file path including ext & dir
+                const filePath = path.format({ ext, name: targetFileName, dir: targetFolder })
+                const relativeFilePath = path.relative(path.join(process.cwd(), "src"), filePath)
 
+
+                try {
                     // If cache = true, and file exists, we can skip downloading
-                    if (cache && await fs.exists(filePath)) return filePath
+                    if (cache && await fs.exists(filePath)) return relativeFilePath
 
                     // Otherwise, make sure the file exists, and start downloading with a stream
                     await fs.ensureFile(filePath)
@@ -216,11 +182,14 @@ class ImageDownloader {
                     )
 
                     // Return the complete file path for further use
-                    return filePath
+                    return relativeFilePath
                 } catch(e) {
                     console.log('')
                     console.log(`${chalk.yellowBright(`Unable to download image for ${options.typeName} - Source URL: ${imageSource}`)}`)
                     console.log(`${chalk.redBright(e)}`)
+
+                    if (filePath)
+                      await fs.unlink(filePath)
                     return null
                 }
             })
@@ -231,30 +200,6 @@ class ImageDownloader {
      * Helpers
      **********************/
 
-    /**
-     * Copied from node_modules/gridsome/lib/app/Plugins.js
-     */
-    async run(eventName, cb, ...args) {
-
-        if (!this.api._app.plugins._listeners[eventName]) return []
-
-        const results = []
-
-        for (const entry of this.api._app.plugins._listeners[eventName]) {
-            if (entry.options.once && entry.done) continue
-
-            const { api, handler } = entry
-            const result = typeof cb === 'function'
-                ? await handler(cb(api))
-                : await handler(...args, api)
-
-            results.push(result)
-            entry.done = true
-        }
-
-        return results
-    }
-
     validateOptions(options = {}) {
         const contraintOption = {
             presence: {
@@ -264,8 +209,7 @@ class ImageDownloader {
 
         const constraints = {
             typeName: contraintOption,
-            sourceField: contraintOption,
-            targetField: contraintOption
+            sourceField: contraintOption
         };
 
         const validationResult = validate(options, constraints, {
