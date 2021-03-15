@@ -82,21 +82,31 @@ class ImageDownloader {
     }
 
     getFieldType(api, options) {
-        const nodeCollection = api._app.store.getCollection(options.typeName)
+        function recursiveSearch(currentPath, pathToNode, pathIndex = 0) {
 
-        //details about this definition can be found here
-        //https://github.com/techfort/LokiJS/wiki/Query-Examples#find-operator-examples-
-        const findQuery = {
-            [options.sourceField]: {
-                '$exists': true
+            if (currentPath === undefined)
+                return null
+
+            if (pathToNode.length === pathIndex)
+                return (typeof currentPath).toLowerCase()
+
+            if (currentPath instanceof Array) {
+                let type = null
+                let index = 0
+                do {
+                    type = recursiveSearch(currentPath[index], pathToNode, pathIndex)
+                    index++
+                } while (type == null && index < currentPath.length)
+                return type.toLowerCase()
             }
+
+            return recursiveSearch(currentPath[pathToNode[pathIndex]], pathToNode, pathIndex + 1)
         }
 
-        const node = nodeCollection.findNode( findQuery )
-
-        //we're using the lodash get functionality
-        //to allow a dot notation in the source field name
-        return (node) ? typeof get(node, options.sourceField) : false
+        return recursiveSearch (
+            api._app.store.getCollection(options.typeName).data(),
+            options.sourceField.split(".")
+        );
     }
 
     generateSchemaType(addSchemaTypes, fieldType) {
