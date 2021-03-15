@@ -1,23 +1,23 @@
-# Gridsome Remote Image Downloader
+# Gridsome Local Image Downloader
 
-This is a simple plugin, which is based on a discord discussion.
-It's more a workaround than a permanent solution.
+This is a Gridsome plugin to download remote images based on @noxify/gridsome-plugin-remote-image
 
-The plugin should work with any data source, but I have tested it only with `source-filesystem`.
+The aim of this plugin is to solve two limitations from the original one.
 
-## Features
+In this plugin you won't need a target field parameter, because it overwrites the source field. If you need to keep the remote path use the original plugin.
 
-* Download of remote images
-* Support of multiple images ( see example )
+There are also a few more changes:
+
+This plugin uses the String type instead of the Image type. To use it you should set the src attribute of your g-image as follows:
+
+```html
+:src="require(`!!assets-loader!@/${object.img}`)"
+```
 
 ## Install
 
 ```sh
-npm i @noxify/gridsome-plugin-remote-image
-
-# or
-
-yarn add @noxify/gridsome-plugin-remote-image
+npm i @capsia/gridsome-plugin-remote-image
 ```
 
 ## Setup
@@ -30,20 +30,18 @@ module.exports = {
   plugins: [
     //...
     {
-      use: '@noxify/gridsome-plugin-remote-image',
+      use: '@capsia/gridsome-plugin-remote-image',
       options: {
         'typeName' : 'Entry',
-        'sourceField': 'remoteImage',
-        'targetField': 'imageDownloaded',
+        'sourceField': 'object.img',
         'targetPath': './src/assets/remoteImages'
       }
     },
     {
-      use: '@noxify/gridsome-plugin-remote-image',
+      use: '@capsia/gridsome-plugin-remote-image',
       options: {
         'typeName' : 'Entry',
         'sourceField': 'remoteImages',
-        'targetField': 'imagesDownloaded',
         'targetPath': './src/assets/remoteImages'
       }
     }
@@ -54,4 +52,6 @@ module.exports = {
 
 ## Documentation
 
-You can find the complete documentation here: https://webstone.info/documentation/gridsome-plugin-remote-image
+You can find more info at the original documentation:
+
+https://webstone.info/documentation/gridsome-plugin-remote-image
