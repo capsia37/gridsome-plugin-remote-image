@@ -37,58 +37,30 @@ class ImageDownloader {
         //also add a new field to the defined collection
         //to store the downloaded images
         api.createSchema(async ({}) => {
-            const fieldType = this.getFieldType(api, options)
-            await this.updateNodes(api, fieldType, this)
+            await this.updateNodes(api, this)
         });
-
     }
 
-    getFieldType(api, options) {
-        function recursiveSearch(currentPath, pathToNode, pathIndex = 0) {
-
-            if (currentPath === undefined)
-                return null
-
-            if (pathToNode.length === pathIndex)
-                return (typeof currentPath).toLowerCase()
-
-            if (currentPath instanceof Array) {
-                let type = null
-                let index = 0
-                do {
-                    type = recursiveSearch(currentPath[index], pathToNode, pathIndex)
-                    index++
-                } while (type == null && index < currentPath.length)
-                return type.toLowerCase()
-            }
-
-            return recursiveSearch(currentPath[pathToNode[pathIndex]], pathToNode, pathIndex + 1)
-        }
-
-        return recursiveSearch (
-            api._app.store.getCollection(options.typeName).data(),
-            options.sourceField.split(".")
-        );
-    }
-
-    async updateNodes(api, fieldType, plugin) {
+    async updateNodes(api, plugin) {
         const collection = api._app.store.getCollection(plugin.options.typeName)
 
         async function recursiveSearch(currentPath, parentPath, pathToNode, pathIndex = 0) {
 
-            if (currentPath === undefined)
+            if (!currentPath)
                 return
 
             if (pathToNode.length === pathIndex) {
                 let imagePaths = await plugin.getRemoteImage(
-                    fieldType === 'string' ? [currentPath] : currentPath,
+                    (typeof currentPath).toLowerCase() === 'string' ? [currentPath] : currentPath,
                     plugin.options
                 )
 
-                if( fieldType === 'string' ) {
+                if( (typeof currentPath).toLowerCase() === 'string' ) {
                     parentPath[pathToNode[pathToNode.length - 1]] = imagePaths[0]
-                } else {
+                } else if (currentPath instanceof Array){
                     parentPath[pathToNode[pathToNode.length - 1]] = imagePaths
+                } else {
+                    console.log("Unrecognised field: "+(typeof currentPath).toLowerCase())
                 }
 
                 return
