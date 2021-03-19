@@ -50,14 +50,12 @@ class ImageDownloader {
                 return
 
             if (pathToNode.length === pathIndex) {
-                let imagePaths = await plugin.getRemoteImage(
-                    (typeof currentPath).toLowerCase() === 'string' ? [currentPath] : currentPath,
-                    plugin.options
-                )
 
                 if( (typeof currentPath).toLowerCase() === 'string' ) {
+                    let imagePaths = await plugin.getRemoteImage( [currentPath], plugin.options )
                     parentPath[pathToNode[pathToNode.length - 1]] = imagePaths[0]
                 } else if (currentPath instanceof Array){
+                    let imagePaths = await plugin.getRemoteImage( currentPath, plugin.options )
                     parentPath[pathToNode[pathToNode.length - 1]] = imagePaths
                 } else {
                     console.log("Unrecognised field: "+(typeof currentPath).toLowerCase())
@@ -119,17 +117,17 @@ class ImageDownloader {
                 // Parse the path to get the existing name, dir, and ext
                 let { name, dir, ext } = path.parse(pathname)
 
-                try {
-                    // If there is no ext, we will try to guess from the http content-type
-                    if (!ext) {
+                // If there is no ext, we will try to guess from the http content-type
+                if (!ext) {
+                    try {
                         const { headers } = await got.head(imageSource)
                         ext = `.${mime.getExtension(headers['content-type'])}`
+                    } catch (e) {
+                        console.log('')
+                        console.log(`${chalk.yellowBright(`Unable to get image type for ${options.typeName} - Source URL: ${imageSource}`)}`)
+                        console.log(`${chalk.redBright(e)}`)
+                        return imageSource
                     }
-                } catch (e) {
-                    console.log('')
-                    console.log(`${chalk.yellowBright(`Unable to get image type for ${options.typeName} - Source URL: ${imageSource}`)}`)
-                    console.log(`${chalk.redBright(e)}`)
-                    return null
                 }
 
                 // Build the target file name - if we want the original name then return that, otherwise return a hash of the image source
@@ -162,7 +160,7 @@ class ImageDownloader {
 
                     if (filePath)
                       await fs.unlink(filePath)
-                    return null
+                    return imageSource
                 }
             })
         )
