@@ -1,19 +1,19 @@
 {
   "name": "@capsia/gridsome-plugin-local-image",
-  "version": "1.1.1",
+  "version": "1.1.4",
   "description": "Simple gridsome plugin to download a remote image based on a defined graphql field",
   "main": "gridsome.server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Riccardo Riccio",
-  "homepage": "https://github.com/capsia37/gridome-plugin-remote-image",
+  "homepage": "https://github.com/capsia37/gridsome-plugin-remote-image",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/capsia37/gridome-plugin-remote-image.git"
+    "url": "git+https://github.com/capsia37/gridsome-plugin-remote-image.git"
   },
   "bugs": {
-    "url": "https://github.com/capsia37/gridome-plugin-remote-image/issues"
+    "url": "https://github.com/capsia37/gridsome-plugin-remote-image/issues"
   },
   "license": "MIT",
   "keywords": [
@@ -24,12 +24,12 @@
     "gridsome-plugin"
   ],
   "dependencies": {
-    "chalk": "^4.1.0",
-    "fs-extra": "^9.1.0",
-    "got": "^11.8.2",
+    "chalk": "^5.0.0",
+    "fs-extra": "^10.0.0",
+    "got": "^12.0.0",
     "lodash.get": "^4.4.2",
-    "mime": "^2.5.2",
-    "normalize-url": "^5.3.0",
+    "mime": "^3.0.0",
+    "normalize-url": "^7.0.2",
     "validate.js": "^0.13.1"
   },
   "devDependencies": {}
