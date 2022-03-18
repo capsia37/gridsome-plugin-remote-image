@@ -1,17 +1,10 @@
-const chalk = require('chalk')
 const crypto = require('crypto')
 const fs = require('fs-extra')
-const get = require('lodash.get')
-const got = require('got').default
+const axios = require('axios')
 const mime = require('mime/lite')
-const normalizeUrl = require('normalize-url')
 const path = require('path')
-const stream = require('stream')
 const url = require('url')
 const validate = require('validate.js')
-const { promisify } = require('util')
-
-const pipeline = promisify(stream.pipeline)
 
 class ImageDownloader {
     constructor(api, options) {
@@ -22,8 +15,8 @@ class ImageDownloader {
 
         if (validationResult) {
             console.log()
-            console.log(`${chalk.yellowBright('Remote images are not downloaded. Please check your configuration.')}`)
-            console.log(`${chalk.yellowBright('* '+validationResult.join('\n* '))}`)
+            console.log('Remote images are not downloaded. Please check your configuration.')
+            console.log('* '+validationResult.join('\n* '))
             console.log()
 
             return null
@@ -86,9 +79,9 @@ class ImageDownloader {
         const { 
             cache = true, 
             original = false, 
-            forceHttps = false, 
-            normalizeProtocol = true, 
-            defaultProtocol = 'http:', 
+//            forceHttps = false, 
+//            normalizeProtocol = true, 
+//            defaultProtocol = 'http:', 
             downloadFromLocalNetwork = false, 
             targetPath = 'src/assets/remoteImages', 
             sourceField 
@@ -96,13 +89,6 @@ class ImageDownloader {
 
         return Promise.all(
             imageSources.map( async imageSource => {
-
-                try {
-                // Normalize URL, and extract the pathname, to be used for the original filename if required
-                    imageSource = normalizeUrl(imageSource, { 'forceHttps': forceHttps, 'normalizeProtocol': normalizeProtocol, 'defaultProtocol': defaultProtocol })
-                } catch(e) {
-                    return imageSource
-                }
 
                 // Check if we have a local file as source
                 var isLocal = validate({ imageSource: imageSource }, { imageSource: { url: { allowLocal: downloadFromLocalNetwork } } })
@@ -120,12 +106,12 @@ class ImageDownloader {
                 // If there is no ext, we will try to guess from the http content-type
                 if (!ext) {
                     try {
-                        const { headers } = await got.head(imageSource)
+                        const { headers } = await axios.head(imageSource)
                         ext = `.${mime.getExtension(headers['content-type'])}`
                     } catch (e) {
                         console.log('')
-                        console.log(`${chalk.yellowBright(`Unable to get image type for ${options.typeName} - Source URL: ${imageSource}`)}`)
-                        console.log(`${chalk.redBright(e)}`)
+                        console.log(`Unable to get image type for ${options.typeName} - Source URL: ${imageSource}`)
+                        console.log(e)
                         return imageSource
                     }
                 }
@@ -146,17 +132,17 @@ class ImageDownloader {
                     // Otherwise, make sure the file exists, and start downloading with a stream
                     await fs.ensureFile(filePath)
                     // This streams the download directly to disk, saving Node temporarily storing every single image in memory
-                    await pipeline(
-                        got.stream(imageSource),
-                        fs.createWriteStream(filePath)
-                    )
+                    let imageDownload = await axios.get(imageSource, {
+                      responseType: 'stream'
+                    })
+                    imageDownload.data.pipe(fs.createWriteStream(filePath))
 
                     // Return the complete file path for further use
                     return relativeFilePath
                 } catch(e) {
                     console.log('')
-                    console.log(`${chalk.yellowBright(`Unable to download image for ${options.typeName} - Source URL: ${imageSource}`)}`)
-                    console.log(`${chalk.redBright(e)}`)
+                    console.log(`Unable to download image for ${options.typeName} - Source URL: ${imageSource}`)
+                    console.log(e)
 
                     if (filePath)
                       await fs.unlink(filePath)

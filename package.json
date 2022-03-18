@@ -1,6 +1,6 @@
 {
   "name": "@capsia/gridsome-plugin-local-image",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "Simple gridsome plugin to download a remote image based on a defined graphql field",
   "main": "gridsome.server.js",
   "scripts": {
@@ -24,13 +24,9 @@
     "gridsome-plugin"
   ],
   "dependencies": {
-    "chalk": "^5.0.0",
-    "fs-extra": "^10.0.0",
-    "got": "^12.0.0",
-    "lodash.get": "^4.4.2",
+    "axios": "^0.26.1",
+    "fs-extra": "^10.0.1",
     "mime": "^3.0.0",
-    "normalize-url": "^7.0.2",
     "validate.js": "^0.13.1"
-  },
-  "devDependencies": {}
+  }
 }
