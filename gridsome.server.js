@@ -79,11 +79,9 @@ class ImageDownloader {
         const { 
             cache = true, 
             original = false, 
-//            forceHttps = false, 
-//            normalizeProtocol = true, 
-//            defaultProtocol = 'http:', 
             downloadFromLocalNetwork = false, 
             targetPath = 'src/assets/remoteImages', 
+            fallbackImage = false, 
             sourceField 
         } = options
 
@@ -112,7 +110,7 @@ class ImageDownloader {
                         console.log('')
                         console.log(`Unable to get image type for ${options.typeName} - Source URL: ${imageSource}`)
                         console.log(e)
-                        return imageSource
+                        return fallbackImage ? fallbackImage : imageSource
                     }
                 }
 
@@ -142,11 +140,10 @@ class ImageDownloader {
                 } catch(e) {
                     console.log('')
                     console.log(`Unable to download image for ${options.typeName} - Source URL: ${imageSource}`)
-                    console.log(e)
 
                     if (filePath)
                       await fs.unlink(filePath)
-                    return imageSource
+                    return fallbackImage ? fallbackImage : imageSource
                 }
             })
         )
